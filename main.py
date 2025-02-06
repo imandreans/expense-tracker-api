@@ -57,9 +57,9 @@ def execute_query(query, parms=None):
             conn.commit()
             return cursor.fetchall()
     except psycopg2.Error as err:
-        print({'Alert!': err})
+        return make_response({'Alert!': err})
     except Exception as e:
-        print(f"An unexpected error occured: {e}")
+        return make_response(f"An unexpected error occured: {e}")
 
 class SignUpForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(message='Username is required as your identity')]) 
