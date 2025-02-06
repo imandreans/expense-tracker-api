@@ -43,10 +43,8 @@ try:
     conn = psycopg2.connect(host=os.getenv("HOST"), dbname= os.getenv("DB_NAME"),
                             user=os.getenv("USER_DB"), password=os.getenv("PASSWORD"),
                             port=os.getenv("PORT"))
-except OperationalError as e:
-    print(f"Error connecting to Database: {e}")
-except DatabaseError as e:
-    print(f"Database error occured: {e}")
+except psycopg2.Error as err:
+    print({'Alert!': err})
 except Exception as e:
     print(f"An unexpected error occured: {e}")
 
@@ -57,31 +55,10 @@ def execute_query(query, parms=None):
             cursor.execute(query, parms)
             conn.commit()
             return cursor.fetchall()
-    except IntegrityError as e:
-            # Relational Integrity of DB is affected
-            print(e)
-            conn.rollback()
-    except DataError as e:
-            # due to problems with the processed data like division by zero, numeric value out of range, etc.
-            print(e)
-            conn.rollback()
-    except ProgrammingError as e:
-            #E.g. table not found or already exists, syntax error in the SQL statement, etc
-            print(e)
-            conn.rollback()
-    except InternalError as e:
-            #The database encounters internal error, e.g. cursor is not valid anymore
-            print(e)
-            conn.rollback()
-    except OperationalError as e:
-            # Related to database's operation and not necesessarily under the control of the programmer
-            print(e)
-            conn.rollback()
-    except NotSupportedError as e:
-            # raised in case a method or database API was used which is not supported by the database
-            print(e)
+    except psycopg2.Error as err:
+        print({'Alert!': err})
     except Exception as e:
-            print(f"An unexpected error occured: {e}")
+        print(f"An unexpected error occured: {e}")
 
 class SignUpForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(message='Username is required as your identity')]) 
