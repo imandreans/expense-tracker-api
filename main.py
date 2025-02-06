@@ -38,16 +38,18 @@ def token_required(func):
         except jwt.exceptions.ExpiredSignatureError as e:
             return make_response({'Alert!': f'Token is Expired! - {e}'})
     return decorated
-
-try:
-    conn = psycopg2.connect(host=os.getenv("HOST"), dbname= os.getenv("DB_NAME"),
+def connect_to_db():
+    try:
+        conn = psycopg2.connect(host=os.getenv("HOST"), dbname= os.getenv("DB_NAME"),
                             user=os.getenv("USER_DB"), password=os.getenv("PASSWORD"),
                             port=os.getenv("PORT"))
-except psycopg2.Error as err:
-    print({'Alert!': err})
-except Exception as e:
-    print(f"An unexpected error occured: {e}")
+        return conn
+    except psycopg2.Error as err:
+        return make_response({'Alert!': err})
+    except Exception as e:
+        return make_response(f"An unexpected error occured: {e}")
 
+conn = connect_to_db()
 def execute_query(query, parms=None):
     try:
 
