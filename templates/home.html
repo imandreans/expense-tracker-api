@@ -16,12 +16,11 @@
 <div>
 <header>
     <a class="crud-button" href="{{url_for('add_expense')}}"><span class="material-symbols-outlined">add</span></a>
-    <form class="filter-expense" action="#" method="post">
         
+    <form action="#" id="filter-expense" method="post">
         <input type="date" name="start-date" id="filter-date" onchange="this.form.submit()" value="{{selected_date[0]}}">
         <input type="date" name="end-date" id="filter-date" onchange="this.form.submit()" value="{{selected_date[1]}}">
-    </form>
-    <form action="#" class="filter-expense" method="post">
+        
         <div>
             <input type="radio" name="filter-date" id="past-week" value="past-week" onchange="this.form.submit()">
             <label for="past-week">Past Week</label>

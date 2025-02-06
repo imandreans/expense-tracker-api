@@ -151,12 +151,13 @@ color: black;
  }
 }
 
-.filter-expense{
+#filter-expense{
     width: 760px;
     padding: 0px;
     background-color: transparent;
     display: flex;
     flex-direction: row;
+    justify-content: flex-end;
     /* flex-direction: row-reverse; */
     div{
         position: relative;
