@@ -8,8 +8,6 @@ from os.path import join, dirname
 from dotenv import load_dotenv
 
 import psycopg2
-from psycopg2 import OperationalError, DatabaseError
-from psycopg2 import IntegrityError, DataError, ProgrammingError, InternalError, NotSupportedError
 
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, DateField, FloatField, PasswordField, SelectField
@@ -38,6 +36,7 @@ def token_required(func):
         except jwt.exceptions.ExpiredSignatureError as e:
             return make_response({'Alert!': f'Token is Expired! - {e}'})
     return decorated
+
 def connect_to_db():
     try:
         conn = psycopg2.connect(host=os.getenv("HOST"), dbname= os.getenv("DB_NAME"),
