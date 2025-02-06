@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block content%}
+    <div class="form-container">
+        <form action="" method="post">
+            {{form.hidden_tag()}}
+            {{form.username.label}}
+            {{form.username()}}
+            {{form.password.label}}
+            {{form.password()}}
+            {{form.balance.label}}
+            {{form.balance()}}
+            <!-- <div>
+                <label for="username">Username</label>
+                <input type="text" name="username" id="username">
+            </div>
+            <div>
+                <label for="password">Password</label>
+                <input type="password" name="password" id="password">
+            </div>
+            <div>
+                <label for="saldo">Saldo</label>
+                <input type="text" inputmode="numeric" name="saldo" id="saldo">
+            </div> -->
+            {% with messages = get_flashed_messages()%}
+                {% if messages %}
+                    <p>{{messages[-1]}}</p>        
+                {% endif %}
+            {% endwith %}
+            {{form.submit()}}
+            <!-- <input type="submit" value="Sign Up"> -->
+        </form>
+    </div>
+{% endblock %}

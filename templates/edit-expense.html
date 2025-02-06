@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content%}
+<div class="form-container">
+    <form action="#" method="post">
+        {{form.hidden_tag()}}
+       
+        {{form.price.label}}
+        {{form.price()}}
+        {{form.details.label}}
+        {{form.details()}}
+        {{form.category.label}}
+        {{form.category()}}
+        {{form.date.label}}
+        {{form.date()}}
+
+        {{form.submit_edit()}}
+    </form>
+</div>
+    
+{% endblock%}

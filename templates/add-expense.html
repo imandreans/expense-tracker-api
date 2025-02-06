@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block content%}
+<div class="form-container">
+    <form action="#" method="post">
+        {{form.hidden_tag()}}
+        <!-- <label for="price">price</label>
+        <input type="text" inputmode="numeric" name="price" id="price"> -->
+        <!-- <label for="detail">detail</label>
+        <input type="text" name="detail" id="detail"> -->
+        <!-- <label for="category">category</label>
+        <input type="text" name="category" id="category"> -->
+        <!-- <label for="date">date</label>
+        <input type="date"  name="date" id="date"> -->
+        <!-- <input type="submit" value="Add"> -->
+         {{form.price.label}}
+         {{form.price()}}
+         {{form.details.label}}
+         {{form.details()}}
+         {{form.category.label}}
+         {{form.category()}}
+         {{form.date.label}}
+         {{form.date()}}
+
+         {{form.submit_add()}}
+         {% if form.errors %}
+            <p>{{form.errors}}</p>
+         {% endif %}
+    </form>
+</div>
+    
+{% endblock%}
