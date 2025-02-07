@@ -2,7 +2,7 @@
     font-family: 'Courier New', Courier, monospace;
 }
 
-#quote{
+.quote{
     position: relative;
     top: 40%;
     align-self: center;

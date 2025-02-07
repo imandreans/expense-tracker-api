@@ -10,13 +10,16 @@ from dotenv import load_dotenv
 import psycopg2
 
 from flask_wtf import FlaskForm
+from flask_wtf import CSRFProtect
+
 from wtforms import StringField, SubmitField, DateField, FloatField, PasswordField, SelectField
 from wtforms.validators import DataRequired
 from wtforms.widgets import NumberInput
 
-app = Flask(__name__)   
+app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY")
 
+csrf = CSRFProtect(app)
 dotenv_path = join(dirname(__file__), '.env')
 
 load_dotenv(dotenv_path)
@@ -30,11 +33,17 @@ def token_required(func):
             payload = jwt.decode(session['token'], os.getenv('JWT_SECRET_KEY'), algorithms=["HS256"])
             return func(*args, **kwargs)
         except jwt.exceptions.InvalidTokenError as e:
-            return make_response({'Alert!': f'Token is Invalid! - {e}'})
+            error = f'Token is Invalid - {e}'
+            return render_template('400.html', error=error)
         except jwt.exceptions.InvalidAlgorithmError as e:
-            return make_response({'Alert!': f'Algorithm is not recognized! - {e}'})
+            error = f'Algorithm is not recognized - {e}'
+            return render_template('400.html', error=error)
         except jwt.exceptions.ExpiredSignatureError as e:
-            return make_response({'Alert!': f'Token is Expired! - {e}'})
+            error = f'Token is Expired! - {e}'
+            return render_template('400.html', error=error)
+        except Exception as e:
+            error = f'Unknown error has occured - {e}'
+            return render_template('400.html', error=error)
     return decorated
 
 def connect_to_db():
@@ -43,23 +52,27 @@ def connect_to_db():
                             user=os.getenv("USER_DB"), password=os.getenv("PASSWORD"),
                             port=os.getenv("PORT"))
         return conn
-    except psycopg2.Error as err:
-        return make_response({'Alert!': err})
+    except psycopg2.Error as e:
+        return render_template('400.html', error=e)
     except Exception as e:
-        return make_response(f"An unexpected error occured: {e}")
+        error = f'Unknown error has occured - {e}'
+        return render_template('400.html', error=error)
 
-conn = connect_to_db()
 def execute_query(query, parms=None):
     try:
-
         with conn.cursor() as cursor:
             cursor.execute(query, parms)
             conn.commit()
-            return cursor.fetchall()
-    except psycopg2.Error as err:
-        return make_response({'Alert!': err})
+            data = cursor.fetchall()
+            conn.close
+            return data
+    except psycopg2.Error as e:
+        conn.rollback()
+        return render_template('400.html', error=e)
     except Exception as e:
-        return make_response(f"An unexpected error occured: {e}")
+        conn.rollback()
+        error = f'Unknown error has occured - {e}'
+        return render_template('400.html', error=error)
 
 class SignUpForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(message='Username is required as your identity')]) 
@@ -82,6 +95,8 @@ class ExpenseForm(FlaskForm):
     submit_add = SubmitField('Add')
     submit_edit = SubmitField('Edit')     
 
+conn = connect_to_db()
+
 @app.route('/', methods=['GET', 'POST'])
 def home():
     if 'token' in session:
@@ -94,7 +109,6 @@ def home():
                     WHERE u.username=%(username)s"""
 
         params = {'username':payload['user']}
-        print(request.form)
         start_date = request.form['start-date'] if 'start-date' in request.form else ''
         end_date = request.form['end-date'] if 'end-date' in request.form else ''
 
@@ -174,17 +188,18 @@ def login():
         user = execute_query(query=query, parms=params)
         
         if user:
-            token = jwt.encode({
-                 'user' : user[0][1],
-                 'expiration': str(datetime.now(timezone.utc) + timedelta(seconds=120))
-            }, os.getenv('JWT_SECRET_KEY'))
-
-            session['token'] = token
-            flash("Log In Success!", "info")
-            return redirect(url_for('home'))
+            try:
+                token = jwt.encode({
+                        'user' : user[0][1],
+                        'expiration': str(datetime.now(timezone.utc) + timedelta(seconds=120))
+                }, os.getenv('JWT_SECRET_KEY'))
+                session['token'] = token
+                flash("Log In Success!", "info")
+                return redirect(url_for('home'))
+            except Exception as e:
+                return render_template('400.html', error=e)
         else:
             flash('username or password isnt valid', 'info')
-            return make_response('Unable to verify', 403, {'WWW-Authenticate': 'Basic realm: Authentication Failed!'})
     return render_template('login.html', form=form)
 
 @app.route('/add', methods=['GET', 'POST'])
