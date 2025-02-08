@@ -1,6 +1,7 @@
 from flask import Flask, render_template, url_for, request, redirect, session, flash, make_response
 from functools import wraps
 import jwt
+from flask_bcrypt import Bcrypt
 from datetime import datetime, timedelta, timezone
 
 import os
@@ -20,6 +21,7 @@ app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY")
 
 csrf = CSRFProtect(app)
+bycrypt = Bcrypt(app)
 dotenv_path = join(dirname(__file__), '.env')
 
 load_dotenv(dotenv_path)
@@ -154,7 +156,8 @@ def signup():
 
     if form.validate_on_submit() and request.method == 'POST':
         username = form.username.data
-        password = form.password.data
+
+        password = bycrypt.generate_password_hash(form.password.data).decode('utf-8')
         balance  = form.balance.data
         # with conn.cursor() as cur:
         #     cur.execute(""" SELECT username FROM public."User" WHERE username=%(username)s""", {'username':username})
@@ -183,10 +186,12 @@ def login():
         username = form.username.data
         password = form.password.data
         
-        query = """ SELECT * FROM public."User" WHERE username = %(username)s and password = %(password)s """    
-        params = {'username':username, 'password': password,}
+        query = """ SELECT * FROM public."User" WHERE username = %(username)s"""    
+        params = {'username':username}
         user = execute_query(query=query, parms=params)
-        
+        print(type(user[0][2]), type(password))
+        check_password = bycrypt.check_password_hash(user[0][2], password)
+        print(check_password)
         if user:
             try:
                 token = jwt.encode({
