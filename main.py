@@ -1,4 +1,4 @@
-from flask import Flask, render_template, url_for, request, redirect, session, flash, make_response
+from flask import Flask, render_template, url_for, request, redirect, flash, make_response
 from functools import wraps
 import jwt
 from flask_bcrypt import Bcrypt
@@ -29,10 +29,11 @@ load_dotenv(dotenv_path)
 def token_required(func):
     @wraps(func)
     def decorated(*args, **kwargs):
-        if 'token' not in session:
-            return make_response({'Alert!' : 'Token is missing!'})
+        token = request.cookies.get('auth_token')
+        if not token:
+            return render_template('400.html', error='Token is Missing!') 
         try:
-            payload = jwt.decode(session['token'], os.getenv('JWT_SECRET_KEY'), algorithms=["HS256"])
+            payload = jwt.decode(token, os.getenv('JWT_SECRET_KEY'), algorithms=["HS256"])
             return func(*args, **kwargs)
         except jwt.exceptions.InvalidTokenError as e:
             error = f'Token is Invalid - {e}'
@@ -101,8 +102,9 @@ conn = connect_to_db()
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
-    if 'token' in session:
-        payload = jwt.decode(session['token'], os.getenv('JWT_SECRET_KEY'), algorithms=["HS256"])
+    token = request.cookies.get('auth_token')
+    if token:
+        payload = jwt.decode(token, os.getenv('JWT_SECRET_KEY'), algorithms=["HS256"])
         
         query = """ SELECT e.* 
                     FROM public."User" as u 
@@ -140,14 +142,13 @@ def home():
             params['end_date'] = end_date
        
         selected_date = start_date, end_date
-        # selected_date = start_date, end_date
         expenses = execute_query(query=query, parms=params)[::-1]
         
         query = """ SELECT balance FROM public."User" WHERE username=%(username)s """
         params = {'username':payload['user']}
         balance = execute_query(query=query, parms=params)[0][0]
 
-        return render_template('home.html', selected_date=selected_date,user=payload['user'], expenses=expenses, balance=balance)
+        return render_template('home.html', selected_date=selected_date, user=payload['user'], expenses=expenses, balance=balance)
     return render_template('home.html')
 
 @app.route('/signup', methods=['POST', 'GET'])
@@ -159,11 +160,6 @@ def signup():
 
         password = bycrypt.generate_password_hash(form.password.data).decode('utf-8')
         balance  = form.balance.data
-        # with conn.cursor() as cur:
-        #     cur.execute(""" SELECT username FROM public."User" WHERE username=%(username)s""", {'username':username})
-        #     if cur.fetchone() == None:
-        #         cur.execute(f""" INSERT INTO public."User" (username, password, balance) VALUES ('{username}', '{password}', {balance})""")
-        #         conn.commit()
         
         query = """ SELECT username FROM public."User" WHERE username=%(username)s"""
         params = {'username':username}
@@ -189,18 +185,23 @@ def login():
         query = """ SELECT * FROM public."User" WHERE username = %(username)s"""    
         params = {'username':username}
         user = execute_query(query=query, parms=params)
-        print(type(user[0][2]), type(password))
+        
         check_password = bycrypt.check_password_hash(user[0][2], password)
-        print(check_password)
-        if user:
+        
+        if user and check_password:
             try:
                 token = jwt.encode({
                         'user' : user[0][1],
                         'expiration': str(datetime.now(timezone.utc) + timedelta(seconds=120))
                 }, os.getenv('JWT_SECRET_KEY'))
-                session['token'] = token
                 flash("Log In Success!", "info")
-                return redirect(url_for('home'))
+                response = make_response(redirect(url_for('home')))
+                response.set_cookie('auth_token',
+                                    token,
+                                    httponly=True,
+                                    secure=True,
+                                    samesite='Strict')
+                return response
             except Exception as e:
                 return render_template('400.html', error=e)
         else:
@@ -210,7 +211,8 @@ def login():
 @app.route('/add', methods=['GET', 'POST'])
 @token_required
 def add_expense():
-    payload = jwt.decode(session['token'], os.getenv('JWT_SECRET_KEY'), algorithms=["HS256"])
+    token = request.cookies.get('auth_token')
+    payload = jwt.decode(token, os.getenv('JWT_SECRET_KEY'), algorithms=["HS256"])
     form = ExpenseForm()
     
     if form.validate_on_submit() and request.method == 'POST':
@@ -249,7 +251,8 @@ def add_expense():
 @app.route('/delete/<id>')
 @token_required
 def delete_expense(id):
-    payload = jwt.decode(session['token'], os.getenv('JWT_SECRET_KEY'), algorithms=["HS256"])
+    token = request.cookies.get('auth_token')
+    payload = jwt.decode(token, os.getenv('JWT_SECRET_KEY'), algorithms=["HS256"])
 
     query = """ SELECT e.price, u.balance FROM public."User" as u JOIN public."Expenses" as e ON u.id =e.user_id WHERE u.username=%(username)s and e.expense_id = %(expense_id)s"""
     params = {'username': payload['user'], 'expense_id': id}
@@ -269,7 +272,8 @@ def delete_expense(id):
 @app.route('/edit/<id>', methods=['GET', 'POST'])
 @token_required
 def edit_expense(id):
-    payload = jwt.decode(session['token'], os.getenv('JWT_SECRET_KEY'), algorithms=["HS256"])
+    token = request.cookies.get('auth_token')
+    payload = jwt.decode(token, os.getenv('JWT_SECRET_KEY'), algorithms=["HS256"])
     form = ExpenseForm()
     
     
@@ -311,8 +315,9 @@ def edit_expense(id):
 
 @app.route('/logout')
 def logout():
-    session.clear()
-    return redirect(url_for('home'))
+    response = make_response(redirect(url_for('home')))
+    response.set_cookie('auth_token', expires=0)
+    return response
 
 if __name__ == '__main__':
     app.run(debug=True)
