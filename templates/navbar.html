@@ -1,6 +1,6 @@
 <nav>
     <h1>Lacak Uang</h1>
-    {% with token = request.cookies.get('aut_token')%}
+    {% with token = request.cookies.get('auth_token')%}
         {% if token %}
         <a href="{{url_for('logout')}}">Log Out</a>
         {% else %}

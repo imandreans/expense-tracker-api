@@ -41,18 +41,18 @@
     <div class="expense">
         <div id="info">
             <header>
-                <p>{{i[2]}}</p>
-                <p>{{i[3]}}</p>
+                <p>{{i['date']}}</p>
+                <p>{{i['category']}}</p>
             </header>
             <div>
-                <h2>{{i[1]}}</h2>
-                <h3>{{i[4]}}</h3>
+                <h2>{{i['description']}}</h2>
+                <h3>{{i['price']}}</h3>
             </div>
             
         </div>
         <div id="actions">
-            <a class="crud-button" id="delete" href="{{url_for('delete_expense', id=i[5])}}"><span class="material-symbols-outlined">delete</span></a>
-            <a class="crud-button" id="edit" href="{{url_for('edit_expense', id=i[5])}}"><span class="material-symbols-outlined">edit</span></a>
+            <a class="crud-button" id="delete" href="{{url_for('delete_expense', id=i['expense_id'])}}"><span class="material-symbols-outlined">delete</span></a>
+            <a class="crud-button" id="edit" href="{{url_for('edit_expense', id=i['expense_id'])}}"><span class="material-symbols-outlined">edit</span></a>
         </div>
     </div>
 
