@@ -333,7 +333,7 @@ def edit_expense(id):
     # query = """ SELECT * FROM public."Expenses" Where expense_id=%(expense_id)s"""
     # params = {'expense_id' : id}
     # expense_data = execute_query(query, parms=params)[0]
-    expenses = conn.table("Expenses").select("*").execute()
+    expenses = conn.table("Expenses").select("*").eq("expense_id", id).execute()
     expense_data = expenses.data[0]
     
     form.price.data = expense_data['price']
