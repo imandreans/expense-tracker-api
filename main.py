@@ -60,46 +60,6 @@ def connect_to_db():
     except Exception as e:
         error = f'Unknown error has occured - {e}'
         return render_template('400.html', error=error)
-# def connect_to_db():
-#     try:
-#         conn = psycopg2.connect(host=os.getenv("HOST"), dbname= os.getenv("DB_NAME"),
-#                             user=os.getenv("USER_DB"), password=os.getenv("PASSWORD"),
-#                             port=os.getenv("PORT"))
-#         return conn
-#     except psycopg2.Error as e:
-#         return render_template('400.html', error=e)
-#     except Exception as e:
-#         error = f'Unknown error has occured - {e}'
-#         return render_template('400.html', error=error)
-
-def execute_query(query, parms=None):
-    try:
-        with conn.cursor() as cursor:
-            cursor.execute(query, parms)
-            conn.commit()
-            data = cursor.fetchall()
-            conn.close
-            return data
-    except Exception as e:
-        conn.rollback()
-        error = f'Unknown error has occured - {e}'
-        return render_template('400.html', error=error)
-
-# def execute_query(query, parms=None):
-#     try:
-#         with conn.cursor() as cursor:
-#             cursor.execute(query, parms)
-#             conn.commit()
-#             data = cursor.fetchall()
-#             conn.close
-#             return data
-#     except psycopg2.Error as e:
-#         conn.rollback()
-#         return render_template('400.html', error=e)
-#     except Exception as e:
-#         conn.rollback()
-#         error = f'Unknown error has occured - {e}'
-#         return render_template('400.html', error=error)
 
 class SignUpForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(message='Username is required as your identity')]) 
@@ -164,12 +124,6 @@ def home():
         expenses = expenses.execute()
         expenses = expenses.data
 
-        # expenses = execute_query(query=query, parms=params)[::-1]
-        
-        # query = """ SELECT balance FROM public."User" WHERE username=%(username)s """
-        # params = {'username':payload['user']}
-        # balance = execute_query(query=query, parms=params)[0][0]
-
         return render_template('home.html', selected_date=selected_date, user=payload['user'], expenses=expenses, balance=balance)
     return render_template('home.html')
 
@@ -183,19 +137,13 @@ def signup():
         password = bycrypt.generate_password_hash(form.password.data).decode('utf-8')
         balance  = form.balance.data
         
-        # query = """ SELECT username FROM public."User" WHERE username=%(username)s"""
-        # params = {'username':username}
-        # username_in_db = execute_query(query=query, parms=params)
-        
         user = conn.table("User").select("*").eq("username", username).execute()
 
         if len(user.data) == 0:
             conn.table("User").insert({"username": username,
                                        "password": password,
                                        "balance": balance}).execute()
-            # query = """ INSERT INTO public."User" (username, password, balance) VALUES (%(username)s, %(password)s, %(balance)s)"""
-            # params = {'username':username, 'password': password, 'balance': balance}
-            # execute_query(query=query, parms=params)
+
             return redirect(url_for('login'))
         
         flash('Username already Exist')
@@ -208,10 +156,6 @@ def login():
     if form.validate_on_submit() and request.method == 'POST':
         username = form.username.data
         password = form.password.data
-        
-        # query = """ SELECT * FROM public."User" WHERE username = %(username)s"""    
-        # params = {'username':username}
-        # user = execute_query(query=query, parms=params)
         
         user = conn.table("User").select("*").eq("username", username).execute()
 
@@ -252,23 +196,6 @@ def add_expense():
         category = form.category.data
         date = form.date.data
 
-        # query = """ 
-        #             SELECT id, balance 
-        #             FROM public."User" 
-        #             WHERE username=%(username)s"""
-        # params = {'username': payload['user']}
-
-        # user_id, user_balance = execute_query(query=query, parms=params)[0]
-        
-        # query = """ INSERT INTO public."Expenses" (user_id, description, date, category, price) VALUES (%(user_id)s, %(description)s, %(date)s, %(category)s, %(price)s) """
-        # params = {'user_id':user_id, 
-        #           'description':details, 
-        #           'date':date, 
-        #           'category':category, 
-        #           'price':price}
-
-        # execute_query(query=query, parms=params)
-
         user = conn.table("User").select("*").eq("username", payload['user']).execute()
         balance = user.data[0]['balance']
         user_id = user.data[0]['user_id']
@@ -307,18 +234,6 @@ def delete_expense(id):
     conn.table("User").update({"balance": balance + price}).eq("user_id", user_id).execute()
 
     conn.table("Expenses").delete().eq('expense_id', id).execute()
-    # query = """ SELECT e.price, u.balance FROM public."User" as u JOIN public."Expenses" as e ON u.id =e.user_id WHERE u.username=%(username)s and e.expense_id = %(expense_id)s"""
-    # params = {'username': payload['user'], 'expense_id': id}
-
-    # price_selected_expense, user_balance = execute_query(query,parms=params)[0]
-
-    # query = """UPDATE public."User" SET balance=%(new_balance)s WHERE username=%(username)s"""
-    # params = {'new_balance': (user_balance + price_selected_expense), 'username': payload['user']}
-    # execute_query(query, parms=params)
-    
-    # query = """ DELETE FROM public."Expenses" WHERE expense_id=%(expense_id)s"""
-    # params = {'expense_id': id}
-    # execute_query(query, parms=params)
         
     return redirect(url_for('home'))
 
@@ -329,10 +244,6 @@ def edit_expense(id):
     payload = jwt.decode(token, os.getenv('JWT_SECRET_KEY'), algorithms=["HS256"])
     form = ExpenseForm()
     
-    
-    # query = """ SELECT * FROM public."Expenses" Where expense_id=%(expense_id)s"""
-    # params = {'expense_id' : id}
-    # expense_data = execute_query(query, parms=params)[0]
     expenses = conn.table("Expenses").select("*").eq("expense_id", id).execute()
     expense_data = expenses.data[0]
     
