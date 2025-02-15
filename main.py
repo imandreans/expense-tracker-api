@@ -52,9 +52,10 @@ def token_required(func):
 
 def connect_to_db():
     try:
-        url = os.getenv("SUPABASE_URL")
-        key = os.getenv("SUPABASE_KEY")
-        supabase: Client = create_client(url,key)
+        with app.app_context():
+            url = os.getenv("SUPABASE_URL")
+            key = os.getenv("SUPABASE_KEY")
+            supabase: Client = create_client(url,key)
         return supabase
     except Exception as e:
         error = f'Unknown error has occured - {e}'
