@@ -375,4 +375,4 @@ def logout():
     return response
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
