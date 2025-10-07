@@ -1,0 +1,17 @@
+[project]
+name = "expense-tracker-api"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "bcrypt>=5.0.0",
+    "dotenv>=0.9.9",
+    "flask>=3.1.2",
+    "flask-bcrypt>=1.0.1",
+    "flask-wtf>=1.2.2",
+    "psycopg2-binary>=2.9.10",
+    "pyjwt>=2.10.1",
+    "requests>=2.32.5",
+    "wtforms>=3.2.1",
+]
