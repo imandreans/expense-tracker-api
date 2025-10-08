@@ -13,5 +13,6 @@ dependencies = [
     "psycopg2-binary>=2.9.10",
     "pyjwt>=2.10.1",
     "requests>=2.32.5",
+    "supabase>=2.21.1",
     "wtforms>=3.2.1",
 ]

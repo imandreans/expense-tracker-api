@@ -3,7 +3,7 @@ from functools import wraps
 import jwt
 from flask_bcrypt import Bcrypt
 from datetime import datetime, timedelta, timezone
-# from supabase import create_client, Client
+from supabase import create_client, Client
 
 import os
 from os.path import join, dirname
@@ -26,22 +26,6 @@ bycrypt = Bcrypt(app)
 dotenv_path = join(dirname(__file__), '.env')
 
 load_dotenv(dotenv_path)
-def execute_query(query, parms=None):
-    try:
-        with conn.cursor() as cursor:
-            cursor.execute(query, parms)
-            conn.commit()
-            data = cursor.fetchall()
-            conn.close
-            return data
-    except psycopg2.Error as e:
-        conn.rollback()
-        return render_template('400.html', error=e)
-    except Exception as e:
-        conn.rollback()
-        error = f'Unknown error has occured - {e}'
-        return render_template('400.html', error=error)
-
 def token_required(func):
     @wraps(func)
     def decorated(*args, **kwargs):
@@ -68,33 +52,11 @@ def token_required(func):
 def connect_to_db():
     try:
         with app.app_context():
-            DB = os.getenv("DB_NAME")
-            HOST = os.getenv("HOST")
-            USER = os.getenv("USER_DB")
-            PASSWORD = os.getenv("PASSWORD")
-            PORT = os.getenv("PORT")
-        return psycopg2.connect(database=DB,
-                                    host=HOST,
-                                    user=USER,
-                                    password=PASSWORD,
-                                    port=PORT)
+            url = os.getenv("SUPABASE_URL")
+            key = os.getenv("SUPABASE_KEY")
+            supabase: Client = create_client(url,key)
+        return supabase
     except Exception as e:
-        error = f'Unknown error has occured - {e}'
-        return render_template('400.html', error=error)
-
-def execute_query(query, parms=None):
-    try:
-        with conn.cursor() as cursor:
-            cursor.execute(query, parms)
-            conn.commit()
-            data = cursor.fetchall()
-            conn.close
-            return data
-    except psycopg2.Error as e:
-        conn.rollback()
-        return render_template('400.html', error=e)
-    except Exception as e:
-        conn.rollback()
         error = f'Unknown error has occured - {e}'
         return render_template('400.html', error=error)
 
@@ -126,14 +88,12 @@ def home():
     token = request.cookies.get('auth_token')
     if token:
         payload = jwt.decode(token, os.getenv('JWT_SECRET_KEY'), algorithms=["HS256"])
-        
-        query = """ SELECT e.* 
-                    FROM users as u 
-                    JOIN expenses as e 
-                    ON u.id =e.user_id 
-                    WHERE u.username=%(username)s"""
+        user = conn.table("Users").select("*").eq("username", payload['user']).execute()
+        balance = user.data[0]['balance']
+        user_id = user.data[0]['id']
 
-        params = {'username':payload['user']}
+        expenses = conn.table("Expenses").select("*").eq('user_id', user_id)
+
         start_date = request.form['start-date'] if 'start-date' in request.form else ''
         end_date = request.form['end-date'] if 'end-date' in request.form else ''
 
@@ -143,32 +103,24 @@ def home():
             match selected_filter:
                 case 'past-month':
                     past_month = current_date - timedelta(days=30)
-                    query += " AND date >= %(past_month)s"
-                    params['past_month'] = past_month
+                    expenses = expenses.gte("date", past_month)
                 case 'past-week':
                     past_week = current_date - timedelta(days=7)
-                    query += " AND date >= %(past_week)s"
-                    params['past_week'] = past_week
+                    expenses = expenses.gte("date", past_week)
                 case 'last-three-months':
                     last_three_months = current_date - timedelta(days=90)
-                    query += " AND date >= %(last_three_months)s"
-                    params['last_three_months'] = last_three_months
+                    expenses = expenses.gte("date", last_three_months)
 
         if len(start_date) > 0:
-            query += " AND date >= %(start_date)s"
-            params['start_date'] = start_date
+            expenses = expenses.gte("date", start_date)
 
         if len(end_date) > 0:
-            query += " AND date <= %(end_date)s"
-            params['end_date'] = end_date
-       
+            expenses = expenses.lte("date", end_date)
+
         selected_date = start_date, end_date
-        expenses = execute_query(query=query, parms=params)[::-1]
-        print(expenses)
         
-        query = """ SELECT balance FROM Users WHERE username=%(username)s """
-        params = {'username':payload['user']}
-        balance = execute_query(query=query, parms=params)[0][0]
+        expenses = expenses.execute()
+        expenses = expenses.data
 
         return render_template('home.html', selected_date=selected_date, user=payload['user'], expenses=expenses, balance=balance)
     return render_template('home.html')
@@ -183,14 +135,13 @@ def signup():
         password = bycrypt.generate_password_hash(form.password.data).decode('utf-8')
         balance  = form.balance.data
         
-        query = """ SELECT username FROM Users WHERE username=%(username)s"""
-        params = {'username':username}
-        username_in_db = execute_query(query=query, parms=params)
-        
-        if len(username_in_db) == 0:
-            query = """ INSERT INTO Users (username, password, balance) VALUES (%(username)s, %(password)s, %(balance)s)"""
-            params = {'username':username, 'password': password, 'balance': balance}
-            execute_query(query=query, parms=params)
+        user = conn.table("Users").select("*").eq("username", username).execute()
+
+        if len(user.data) == 0:
+            conn.table("Users").insert({"username": username,
+                                       "password": password,
+                                       "balance": balance}).execute()
+
             return redirect(url_for('login'))
         
         flash('Username already Exist')
@@ -204,17 +155,17 @@ def login():
         username = form.username.data
         password = form.password.data
         
-        query = """ SELECT * FROM Users WHERE username = %(username)s"""    
-        params = {'username':username}
-        user = execute_query(query=query, parms=params)
-        print(user)
-        check_password = bycrypt.check_password_hash(user[0][2], password)
+        user = conn.table("Users").select("*").eq("username", username).execute()
+        print(conn.table("Users").select("*").execute())
+        print(username)
         
-        if user and check_password:
+        if user:
             try:
+                check_password = bycrypt.check_password_hash(user.data[0]['password'], password)
+                exp = datetime.now(timezone.utc) + timedelta(days=1)
                 token = jwt.encode({
-                        'user' : user[0][1],
-                        'expiration': str(datetime.now(timezone.utc) + timedelta(seconds=120))
+                        'user' : user.data[0]['username'],
+                        'expiration': int(exp.timestamp())
                 }, os.getenv('JWT_SECRET_KEY'))
                 flash("Log In Success!", "info")
                 response = make_response(redirect(url_for('home')))
@@ -239,33 +190,28 @@ def add_expense():
     
     if form.validate_on_submit() and request.method == 'POST':
         price = form.price.data
-        details = form.details.data
+        description = form.details.data
         category = form.category.data
         date = form.date.data
 
-        query = """ 
-                    SELECT id, balance 
-                    FROM Users 
-                    WHERE username=%(username)s"""
-        params = {'username': payload['user']}
+        user = conn.table("Users").select("*").eq("username", payload['user']).execute()
+        balance = user.data[0]['balance']
+        user_id = user.data[0]['id']
+        conn.table("Expenses").insert({'user_id': user_id,
+                                       "price": price,
+                                       "title": description,
+                                       "category": category,
+                                       "created_at": str(date)}).execute()
 
-        user_id, user_balance = execute_query(query=query, parms=params)[0]
-        
-        query = """ INSERT INTO Expenses (user_id, title, date, category, price) VALUES (%(user_id)s, %(title)s, %(date)s, %(category)s, %(price)s) """
-        params = {'user_id':user_id, 
-                  'title':details, 
-                  'date':date, 
-                  'category':category, 
-                  'price':price}
 
-        execute_query(query=query, parms=params)
+        new_balance = int(balance)-price
+        print(user_id)
+        conn.table("Users").update({"balance": new_balance}).eq('id', user_id).execute()
 
-        new_balance = int(user_balance)-price
+        # query = """ UPDATE public."Users" SET balance=%(new_balance)s WHERE id =%(id)s """
+        # params = {'new_balance':int(new_balance), 'id':user_id}
 
-        query = """ UPDATE Users SET balance=%(new_balance)s WHERE id =%(id)s """
-        params = {'new_balance':int(new_balance), 'id':user_id}
-
-        execute_query(query=query, parms=params)
+        # execute_query(query=query, parms=params)
 
         return redirect(url_for('home'))
     return render_template('add-expense.html', form=form)
@@ -276,18 +222,17 @@ def delete_expense(id):
     token = request.cookies.get('auth_token')
     payload = jwt.decode(token, os.getenv('JWT_SECRET_KEY'), algorithms=["HS256"])
 
-    query = """ SELECT e.price, u.balance FROM Users as u JOIN expenses as e ON u.id =e.user_id WHERE u.username=%(username)s and e.id = %(id)s"""
-    params = {'username': payload['user'], 'id': id}
+    user = conn.table("Users").select("*").eq("username", payload['user']).execute()
+    balance = user.data[0]['balance']
+    user_id = user.data[0]['id']
 
-    price_selected_expense, user_balance = execute_query(query,parms=params)[0]
+    expenses = conn.table("Expenses").select("*").eq('user_id', user_id).eq("id", id).execute()
+    print(expenses)
+    price = expenses.data[0]['price']
 
-    query = """UPDATE Users SET balance=%(new_balance)s WHERE username=%(username)s"""
-    params = {'new_balance': (user_balance + price_selected_expense), 'username': payload['user']}
-    execute_query(query, parms=params)
-    
-    query = """ DELETE FROM expenses WHERE id=%(id)s"""
-    params = {'id': id}
-    execute_query(query, parms=params)
+    conn.table("Users").update({"balance": balance + price}).eq('id', user_id).execute()
+
+    conn.table("Expenses").delete().eq('id', id).execute()
         
     return redirect(url_for('home'))
 
@@ -298,37 +243,37 @@ def edit_expense(id):
     payload = jwt.decode(token, os.getenv('JWT_SECRET_KEY'), algorithms=["HS256"])
     form = ExpenseForm()
     
+    expenses = conn.table("Expenses").select("*").eq("id", id).execute()
+    expense_data = expenses.data[0]
     
-    query = """ SELECT * FROM expenses Where id=%(id)s"""
-    params = {'id' : id}
-    expense_data = execute_query(query, parms=params)[0]
-    form.price.data = expense_data[5]
-    form.details.data = expense_data[1]
-    form.date.data = expense_data[2]
-    form.category.data = expense_data[4]
+    form.price.data = expense_data['price']
+    form.details.data = expense_data['title']
+    form.date.data = datetime.now()
+    form.category.data = expense_data['category']
 
     if form.validate_on_submit() and request.method == 'POST':
-        query = """ SELECT id, balance FROM Users WHERE username=%(username)s"""
-        params = {'username': payload['user']}
-        user_id, user_balance = execute_query(query, parms=params)[0]
         
+        user = conn.table("Users").select("id, balance").eq("username", payload["user"]).execute()
+        balance = user.data[0]['balance']
+        user_id = user.data[0]['id']
+
         price = float(request.form['price'])
         detail = request.form['details']
         category = request.form['category']
-        date = request.form['date']
+        date = datetime.strptime(request.form['date'], f"%Y-%m-%d")
         
-        user_balance = float(user_balance)
-        current_price = float(expense_data[5])
+        user_balance = float(balance)
+        current_price = float(expense_data['price'])
         
         user_balance = user_balance if price == current_price else user_balance + current_price - price
         
-        query = """UPDATE expenses SET title=%(detail)s, date=%(date)s, category=%(category)s, price=%(price)s WHERE id=%(id)s"""
-        params = {'detail': detail, 'date': date, 'category': category, 'price': price, 'id': id}
-        execute_query(query, parms=params)
+        conn.table("Expenses").update({"price": price,
+                                       "title": detail,
+                                       "category": category,
+                                       "created_at": str(date)}).eq("id", id).execute()
+
         
-        query = """UPDATE Users SET balance=%(user_balance)s WHERE id = %(user_id)s"""
-        params = {'user_balance': user_balance, 'user_id':user_id}
-        execute_query(query, parms=params)
+        conn.table("Users").update({"balance": user_balance}).eq('id', user_id).execute()
 
         return redirect(url_for('home'))
     

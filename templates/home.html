@@ -70,25 +70,25 @@ user %}
   <div class="expense">
     <div id="info">
       <header>
-        <p>{{i[2]}}</p>
-        <p>{{i[4]}}</p>
+        <p>{{i['created_at']}}</p>
+        <p>{{i['category']}}</p>
       </header>
       <div>
-        <h2>{{i[1]}}</h2>
-        <h3>{{i[5]}}</h3>
+        <h2>{{i['title']}}</h2>
+        <h3>{{i['price']}}</h3>
       </div>
     </div>
     <div id="actions">
       <a
         class="crud-button"
         id="delete"
-        href="{{url_for('delete_expense', id=i[0])}}"
+        href="{{url_for('delete_expense', id=i['id'])}}"
         ><span class="material-symbols-outlined">delete</span></a
       >
       <a
         class="crud-button"
         id="edit"
-        href="{{url_for('edit_expense', id=i[0])}}"
+        href="{{url_for('edit_expense', id=i['id'])}}"
         ><span class="material-symbols-outlined">edit</span></a
       >
     </div>
