@@ -9,8 +9,6 @@ import os
 from os.path import join, dirname
 from dotenv import load_dotenv
 
-import psycopg2
-
 from flask_wtf import FlaskForm
 from flask_wtf import CSRFProtect
 
@@ -286,4 +284,4 @@ def logout():
     return response
 if __name__ == '__main__':
 
-    app.run(port="5001", debug="True")
+    app.run()
