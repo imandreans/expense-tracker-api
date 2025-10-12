@@ -1,0 +1,6 @@
+[build]
+    command = "uv run python app.py"
+    publish = "public/"
+
+[build.environment]
+    PYTHON_VERSION = "3.10"
