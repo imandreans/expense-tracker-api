@@ -1,6 +1,10 @@
 [build]
-    command = "/build.sh"
-    publish = "public/"
-
+  functions = "netlify/functions"
+  
 [build.environment]
-    PYTHON_VERSION = "3.10"
+  PYTHON_VERSION = "3.10"
+
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/app"
+  status = 200
