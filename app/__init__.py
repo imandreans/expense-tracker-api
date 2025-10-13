@@ -1,5 +1,4 @@
-from flask import Blueprint
-from flask import render_template, url_for, request, redirect, flash, make_response, current_app
+from flask import render_template, request, current_app
 from flask import Flask
 
 import jwt
@@ -7,8 +6,8 @@ import jwt
 from datetime import datetime, timedelta, timezone
 from supabase import create_client, Client
 import os
-from blueprints.routes.users import user_bp
-from blueprints.routes.expenses import expense_bp
+from app.routes.users import user_bp
+from app.routes.expenses import expense_bp
 import os
 from supabase import create_client, Client
 
@@ -17,12 +16,11 @@ from flask_bcrypt import Bcrypt
 import os
 from dotenv import load_dotenv
 
-
-
 from flask_wtf import CSRFProtect
 root_path = os.path.dirname(os.path.abspath(os.path.join(__file__, '..')))
 app = Flask(__name__, root_path=root_path, template_folder="templates")
 @app.route('/', methods=['GET', 'POST'])
+
 def home():
     token = request.cookies.get('auth_token')
     conn: Client = current_app.supabase
