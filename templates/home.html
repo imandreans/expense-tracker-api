@@ -11,7 +11,7 @@ user %}
   <header>
     <a
       class="crud-button"
-      href="{{url_for('add_expense')}}"
+      href="{{url_for('user.add_expense')}}"
       ><span class="material-symbols-outlined">add</span></a
     >
 
@@ -82,13 +82,13 @@ user %}
       <a
         class="crud-button"
         id="delete"
-        href="{{url_for('delete_expense', id=i['id'])}}"
+        href="{{url_for('user.delete_expense', id=i['id'])}}"
         ><span class="material-symbols-outlined">delete</span></a
       >
       <a
         class="crud-button"
         id="edit"
-        href="{{url_for('edit_expense', id=i['id'])}}"
+        href="{{url_for('user.edit_expense', id=i['id'])}}"
         ><span class="material-symbols-outlined">edit</span></a
       >
     </div>
