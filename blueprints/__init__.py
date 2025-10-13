@@ -1,7 +1,6 @@
 from flask import Blueprint
 from flask import render_template, url_for, request, redirect, flash, make_response, current_app
 from flask import Flask
-from functools import wraps
 
 import jwt
 
@@ -9,13 +8,13 @@ from datetime import datetime, timedelta, timezone
 from supabase import create_client, Client
 import os
 from blueprints.routes.users import user_bp
+from blueprints.routes.expenses import expense_bp
 import os
 from supabase import create_client, Client
 
 from flask_bcrypt import Bcrypt
 
 import os
-from os.path import join, dirname
 from dotenv import load_dotenv
 
 
@@ -69,6 +68,7 @@ def home():
 def create_app():
     app.secret_key = os.getenv("SECRET_KEY")
     app.register_blueprint(user_bp, url_prefix="/user")
+    app.register_blueprint(expense_bp, url_prefix="/expense")
 
     app.csrf = CSRFProtect(app)
     app.bycrypt = Bcrypt(app)
