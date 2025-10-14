@@ -6,8 +6,8 @@ import jwt
 from datetime import datetime, timedelta, timezone
 from supabase import create_client, Client
 import os
-from app.routes.users import user_bp
-from app.routes.expenses import expense_bp
+from app.http.users import user_bp
+from app.http.expenses import expense_bp
 import os
 from supabase import create_client, Client
 
@@ -19,8 +19,8 @@ from dotenv import load_dotenv
 from flask_wtf import CSRFProtect
 root_path = os.path.dirname(os.path.abspath(os.path.join(__file__, '..')))
 app = Flask(__name__, root_path=root_path, template_folder="templates")
-@app.route('/', methods=['GET', 'POST'])
 
+@app.route('/', methods=['GET', 'POST'])
 def home():
     token = request.cookies.get('auth_token')
     conn: Client = current_app.supabase
@@ -69,7 +69,7 @@ def create_app():
     app.register_blueprint(expense_bp, url_prefix="/expense")
 
     app.csrf = CSRFProtect(app)
-    app.bycrypt = Bcrypt(app)
+    app.bcrypt = Bcrypt(app)
 
     dotenv_path = '.env'
     load_dotenv(dotenv_path)
@@ -79,5 +79,8 @@ def create_app():
     supabase: Client = create_client(url,key)
 
     app.supabase = supabase
+
+    from error_handlers import register_error_handlers
+    register_error_handlers(app)
 
     return app

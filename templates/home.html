@@ -70,7 +70,7 @@ user %}
   <div class="expense">
     <div id="info">
       <header>
-        <p>{{i['created_at']}}</p>
+        <p>{{i['created_at'].split("T")[0]}}</p>
         <p>{{i['category']}}</p>
       </header>
       <div>
