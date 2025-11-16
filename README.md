@@ -10,8 +10,5 @@ A Website that you can use to track your outcome and balance.
 - PostgreSQL 14.18
 - JSON Web Token
 - BCrypt
-## Quick Start
-```
-python3 run main.go
-```
+
 This project is available in https://roadmap.sh/projects/expense-tracker-api
