@@ -8,7 +8,8 @@ A Website that you can use to track your outcome and balance.
 ## Tech Stack
 - Python 3.10.12
 - PostgreSQL 14.18
-- Deployed on Vercel
+- JSON Web Token
+- BCrypt
 ## Quick Start
 ```
 python3 run main.go
