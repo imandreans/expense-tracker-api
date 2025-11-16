@@ -303,7 +303,6 @@ source = { virtual = "." }
 dependencies = [
     { name = "annotated-types" },
     { name = "anyio" },
-    { name = "bcrypt" },
     { name = "blinker" },
     { name = "certifi" },
     { name = "cffi" },
@@ -313,6 +312,7 @@ dependencies = [
     { name = "deprecated" },
     { name = "deprecation" },
     { name = "dotenv" },
+    { name = "fastapi" },
     { name = "flask" },
     { name = "flask-bcrypt" },
     { name = "flask-jwt-extended" },
@@ -335,6 +335,7 @@ dependencies = [
     { name = "mdurl" },
     { name = "ordered-set" },
     { name = "packaging" },
+    { name = "passlib" },
     { name = "postgrest" },
     { name = "psycopg2-binary" },
     { name = "pycparser" },
@@ -367,7 +368,6 @@ dependencies = [
 requires-dist = [
     { name = "annotated-types", specifier = "==0.7.0" },
     { name = "anyio", specifier = "==4.11.0" },
-    { name = "bcrypt", specifier = "==5.0.0" },
     { name = "blinker", specifier = "==1.9.0" },
     { name = "certifi", specifier = "==2025.10.5" },
     { name = "cffi", specifier = "==2.0.0" },
@@ -377,6 +377,7 @@ requires-dist = [
     { name = "deprecated", specifier = "==1.2.18" },
     { name = "deprecation", specifier = "==2.1.0" },
     { name = "dotenv", specifier = "==0.9.9" },
+    { name = "fastapi", specifier = ">=0.119.0" },
     { name = "flask", specifier = "==3.1.0" },
     { name = "flask-bcrypt", specifier = "==1.0.1" },
     { name = "flask-jwt-extended", specifier = "==4.7.1" },
@@ -399,6 +400,7 @@ requires-dist = [
     { name = "mdurl", specifier = "==0.1.2" },
     { name = "ordered-set", specifier = "==4.1.0" },
     { name = "packaging", specifier = "==25.0" },
+    { name = "passlib", specifier = ">=1.7.4" },
     { name = "postgrest", specifier = "==0.19.3" },
     { name = "psycopg2-binary", specifier = "==2.9.11" },
     { name = "pycparser", specifier = "==2.23" },
@@ -425,6 +427,20 @@ requires-dist = [
     { name = "werkzeug", specifier = "==3.1.3" },
     { name = "wrapt", specifier = "==1.17.3" },
     { name = "wtforms", specifier = "==3.2.1" },
+]
+
+[[package]]
+name = "fastapi"
+version = "0.119.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pydantic" },
+    { name = "starlette" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/0a/f9/5c5bcce82a7997cc0eb8c47b7800f862f6b56adc40486ed246e5010d443b/fastapi-0.119.0.tar.gz", hash = "sha256:451082403a2c1f0b99c6bd57c09110ed5463856804c8078d38e5a1f1035dbbb7", size = 336756, upload-time = "2025-10-11T17:13:40.53Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ce/70/584c4d7cad80f5e833715c0a29962d7c93b4d18eed522a02981a6d1b6ee5/fastapi-0.119.0-py3-none-any.whl", hash = "sha256:90a2e49ed19515320abb864df570dd766be0662c5d577688f1600170f7f73cf2", size = 107095, upload-time = "2025-10-11T17:13:39.048Z" },
 ]
 
 [[package]]
@@ -735,6 +751,15 @@ wheels = [
 ]
 
 [[package]]
+name = "passlib"
+version = "1.7.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/b6/06/9da9ee59a67fae7761aab3ccc84fa4f3f33f125b370f1ccdb915bf967c11/passlib-1.7.4.tar.gz", hash = "sha256:defd50f72b65c5402ab2c573830a6978e5f202ad0d984793c8dde2c4152ebe04", size = 689844, upload-time = "2020-10-08T19:00:52.121Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3b/a4/ab6b7589382ca3df236e03faa71deac88cae040af60c071a78d254a62172/passlib-1.7.4-py2.py3-none-any.whl", hash = "sha256:aa6bca462b8d8bda89c70b382f0c298a20b5560af6cbfa2dce410c0a2fb669f1", size = 525554, upload-time = "2020-10-08T19:00:49.856Z" },
+]
+
+[[package]]
 name = "postgrest"
 version = "0.19.3"
 source = { registry = "https://pypi.org/simple" }
@@ -952,6 +977,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/a2/87/a6771e1546d97e7e041b6ae58d80074f81b7d5121207425c964ddf5cfdbd/sniffio-1.3.1.tar.gz", hash = "sha256:f4324edc670a0f49750a81b895f35c3adb843cca46f0530f79fc1babb23789dc", size = 20372, upload-time = "2024-02-25T23:20:04.057Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e9/44/75a9c9421471a6c4805dbf2356f7c181a29c1879239abab1ea2cc8f38b40/sniffio-1.3.1-py3-none-any.whl", hash = "sha256:2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2", size = 10235, upload-time = "2024-02-25T23:20:01.196Z" },
+]
+
+[[package]]
+name = "starlette"
+version = "0.48.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a7/a5/d6f429d43394057b67a6b5bbe6eae2f77a6bf7459d961fdb224bf206eee6/starlette-0.48.0.tar.gz", hash = "sha256:7e8cee469a8ab2352911528110ce9088fdc6a37d9876926e73da7ce4aa4c7a46", size = 2652949, upload-time = "2025-09-13T08:41:05.699Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/be/72/2db2f49247d0a18b4f1bb9a5a39a0162869acf235f3a96418363947b3d46/starlette-0.48.0-py3-none-any.whl", hash = "sha256:0764ca97b097582558ecb498132ed0c7d942f233f365b86ba37770e026510659", size = 73736, upload-time = "2025-09-13T08:41:03.869Z" },
 ]
 
 [[package]]

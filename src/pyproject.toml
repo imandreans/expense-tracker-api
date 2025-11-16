@@ -7,7 +7,6 @@ requires-python = ">=3.13"
 dependencies = [
     "annotated-types==0.7.0",
     "anyio==4.11.0",
-    "bcrypt==5.0.0",
     "blinker==1.9.0",
     "certifi==2025.10.5",
     "cffi==2.0.0",
@@ -17,6 +16,7 @@ dependencies = [
     "deprecated==1.2.18",
     "deprecation==2.1.0",
     "dotenv==0.9.9",
+    "fastapi>=0.119.0",
     "flask==3.1.0",
     "flask-bcrypt==1.0.1",
     "flask-jwt-extended==4.7.1",
@@ -39,6 +39,7 @@ dependencies = [
     "mdurl==0.1.2",
     "ordered-set==4.1.0",
     "packaging==25.0",
+    "passlib>=1.7.4",
     "postgrest==0.19.3",
     "psycopg2-binary==2.9.11",
     "pycparser==2.23",
