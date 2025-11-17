@@ -5,12 +5,13 @@ import re
 from typing import Annotated
 
 def check_whitespaces(text: str) -> str:
-    if re.search("\\S", text):
+    if re.search(r"\\S+", text):
         raise ValueError("No whitespaces, please")
     return text
 
 class RegisterUserRequest(BaseModel):
-    username: Annotated[str, BeforeValidator(check_whitespaces)] = Field(min_length=1, frozen=True)
+    # username: Annotated[str, BeforeValidator(check_whitespaces)] = Field(min_length=1, frozen=True)
+    username: str = Field(min_length=1, frozen=True)
     password: str = Field(min_length=8)
     balance: int = Field(gt=0, repr=True)
 

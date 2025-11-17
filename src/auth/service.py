@@ -1,10 +1,13 @@
-from supabase import Client
+# from supabase import Client
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm, HTTPAuthorizationCredentials, HTTPBearer
 from fastapi import Depends, HTTPException
 from .model  import RegisterUserRequest, Token, TokenData
-import datetime
+from datetime import datetime, timezone, timedelta
 from passlib.context import CryptContext
 import uuid
+from ..entities.core import User
 import jwt
 from jwt.exceptions import InvalidTokenError
 from typing import Annotated
@@ -28,18 +31,20 @@ def verify_password(plain_password: str, hashed_password: str) -> str:
     return bcrypt_context.verify(plain_password, hashed_password)
 
 # Error handling working
-def authenticate_user(username: str, password: str, db: Client) -> list:
-    user = db.table("Users").select("*").eq("username", username).execute()
-    if user.data == [] or not verify_password(password, user.data[0]["password"]):
-        logging.error("Username/Password is invalid")
-        raise HTTPException(status_code=400, detail="Username/Password is invalid!")
-    return user.data[0]
+def authenticate_user(username: str, password: str, db: Session) -> list:
+    query = select(User).where(User.username == username)
+    user = db.scalars(query).first()
+    # user = db.table("Users").select("*").eq("username", username).execute()
+    if user or verify_password(password, user.password):
+        return user.id
+    logging.error("Username/Password is invalid")
+    raise HTTPException(status_code=400, detail="Username/Password is invalid!")
 
 def create_access_token(username: str, user_id: str, expires_delta: int = None) -> str:
     if expires_delta is not None:
-        expires_delta = datetime.datetime.now(datetime.timezone.utc) + expires_delta
+        expires_delta = datetime.now(timezone.utc) + expires_delta
     else:
-        expires_delta = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=30)
+        expires_delta = datetime.now(timezone.utc) + timedelta(minutes=30)
     encode = {"exp": expires_delta, "id": user_id, "sub": username}
     logging.info("Token is created")
     return jwt.encode(encode, JWT_SECRET_KEY, JWT_ALGORITHM)
@@ -58,8 +63,8 @@ def verify_token(token) -> TokenData:
              logging.error("Credentials invalid")
              raise credentials_exception
         token_data = TokenData(user_id=user_id)
-    except InvalidTokenError:
-         logging.error("Token invalid")
+    except Exception as e:
+         logging.error(f"Token invalid: {e}")
          raise credentials_exception
     return token_data
 
@@ -70,40 +75,43 @@ def get_current_user(token: HTTPAuthorizationCredentials = Depends(security)) ->
     return verify_token(token.credentials)
 
 
-def create_user(db: Client, request: RegisterUserRequest) -> Token:
-            username = request.username
-            password = request.password 
-            balance = request.balance
-            try:
-                logging.info("Getting user data from db...")
-                user = db.table("Users").select("*").eq("username", username).execute()
-                if user.data != []:
-                    logging.error("Username conflict with another username")
-                    raise HTTPException(status_code=409, detail="User already exists")
-                
-                new_id = str(uuid.uuid4())
-                logging.info("Getting user data from db...")
-                db.table("Users").insert({"id": new_id,
-                                        "username": username,
-                                        "password": hash_password(password),
-                                        "balance": balance}).execute()
-                # Create access token can wait, 
-                token = create_access_token(username, new_id, datetime.timedelta(minutes=10))
-                return Token(create_access=token, token_type="bearer") 
-            except Exception as e:
-                 logging.error(str(e))
-                 raise HTTPException(status_code=500, detail=str(e))
+def create_user(db: Session, request: RegisterUserRequest) -> Token | None:
+    try:
+
+        query = select(User).where(User.username == request.username)
+        user = db.scalars(query).first()
+        logging.info(f"Getting {request.username}, if already exists")
+        if user:
+            raise HTTPException(status_code=409, detail="Username has already exists")
+        
+        logging.info(f"Create new username. . .")
+        new_user = User(
+            id=uuid.uuid4(),
+            username=request.username,
+            password = hash_password(request.password),
+            balance = request.balance,
+        )
+        
+        # db = next(db) # do this because there's error said 'generator doesn't have add attributes'
+        db.add(new_user)
+        db.commit()
+        
+        token = create_access_token(new_user.username, new_user.id, timedelta(minutes=10))
+        return Token(create_access=token, type="bearer") 
+    except Exception as e:
+        logging.error(f"Failed to register user: {e}")
+        raise
         
         
 CurrentUser = Annotated[TokenData, Depends(get_current_user)]
 
-def login(db: Client, request: Annotated[OAuth2PasswordRequestForm, Depends()]) -> Token:
+def login(db: Session, request: Annotated[OAuth2PasswordRequestForm, Depends()]) -> Token:
     username = request.username
     password = request.password
     
     user = authenticate_user(username, password, db)
-    token = create_access_token(username, user["id"], 
-                            datetime.timedelta(minutes=10))
+    token = create_access_token(username, str(user), 
+                            timedelta(minutes=10))
     logging.info("User logged in")
     return Token(create_access=token, token_type="bearer")
 

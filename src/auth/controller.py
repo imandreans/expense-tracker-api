@@ -3,13 +3,8 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi import APIRouter, Depends
 from ..auth import service
 from ..database.core import connect_db
-
+import logging
 router = APIRouter()
-
-"""Need to learn
-- Asyncronous and await on python
-- 
-"""
 # Create data model user
 
 @router.post("/register/", tags=["users"])

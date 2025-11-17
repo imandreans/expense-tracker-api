@@ -2,15 +2,16 @@ from pydantic import BaseModel,Field
 import datetime
 from uuid import UUID, uuid4
 from enum import Enum
+from ..entities.core import Category
 
-class CategoryExpense(Enum):
-    GROCERIES = "Groceries"
-    LEISURE = "Leisure"
-    ELECTRONICS = "Electronics"
-    UTILIES = "Utilies"
-    CLOTHING = "Clothing"
-    HEALTH = "Health"
-    OTHERS = "Others"
+# class CategoryExpense(Enum):
+#     GROCERIES = "Groceries"
+#     LEISURE = "Leisure"
+#     ELECTRONICS = "Electronics"
+#     UTILIES = "Utilies"
+#     CLOTHING = "Clothing"
+#     HEALTH = "Health"
+#     OTHERS = "Others"
 
 class CreateExpense(BaseModel):
     # Field type must be ...
@@ -19,7 +20,7 @@ class CreateExpense(BaseModel):
     title: str = Field(min_length=1)
     #price must be a positive values
     price: int = Field(gt=0)
-    category: CategoryExpense
+    category: Category = Category.OTHERS
     # 
     date: datetime.datetime = datetime.datetime.now()
 
