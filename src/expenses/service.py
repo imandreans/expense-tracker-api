@@ -1,10 +1,12 @@
 from ..auth.model import TokenData
 from sqlalchemy.orm import Session
-
+import json
+from fastapi.encoders import jsonable_encoder
 # from supabase import Client
 from .model import CreateExpense
 from uuid import uuid4
-from fastapi import HTTPException
+from fastapi import HTTPException, status
+from fastapi.responses import JSONResponse
 import logging
 from sqlalchemy import select, update, delete
 from ..entities.core import Expense, User
@@ -12,9 +14,9 @@ from sqlalchemy.orm import Session
 
 def create_expenses(db: Session, current_user: TokenData, expense: CreateExpense):
         try:    
-                logging.info("Getting user's balance...")  
                 query =  select(User).where(User.id == current_user.user_id)
                 user = db.scalars(query).first()
+                logging.info(f"Getting {user.username}'s balance...")  
                 balance = user.balance
                 logging.info("Inputting new expense...")
                 new_expense = Expense(
@@ -27,14 +29,19 @@ def create_expenses(db: Session, current_user: TokenData, expense: CreateExpense
                 )
                 db.add(new_expense)
                 db.commit()
-                
-                logging.info("Updating user's balance")
+                logging.info(new_expense)
+                logging.info(f"Updating {user.username}'s balance")
                 new_balance = int(balance)-expense.price
                 query = update(User).where(User.id == current_user.user_id).values(balance=new_balance)
                 db.execute(query)
                 db.commit()
                 logging.info("Expense is Added")
-                return {"Status" : 201, "Message" : f"{expense.title} is added"}
+                return {
+                        "Status": "Success",
+                        "Data": new_expense.to_dict(),
+                        "Message" : "Expense is added",
+                        "Errors": None
+    }  
                 # user = db.table("Users").select("*").eq("id", current_user.user_id).execute()
                 # balance = user.data[0]['balance']
                 # logging.info("Inputting new expense...")
@@ -83,7 +90,12 @@ def delete_expense(db: Session, current_user: TokenData, expense_id):
                 db.commit()
 
                 logging.info("Expense is deleted")
-                return {"Status" : 200, "Message" : "Expense is deleted"}
+                return {
+                        "Status": "Success",
+                        "Data": None,
+                        "Message" : "Expense is deleted",
+                        "Errors": None
+                        }  
         except Exception as e:
                logging.error(str(e))
                raise HTTPException(status_code=500, detail=str(e))
@@ -114,14 +126,17 @@ def edit_expense(db: Session, current_user: TokenData, expense_id, expense: Crea
                 #                                 "category": expense.category ,
                 #                                 "created_at": str(expense.date)}).eq("id", expense_id).execute()
 
-                
-
                 query = update(User).where(User.id == current_user.user_id).values(balance=user_balance)
                 db.execute(query)
                 db.commit()
                 # db.table("Users").update({"balance": user_balance}).eq('id', current_user.user_id).execute()
                 logging.info("Expense is updated")
-                return {"Status" : 200, "Message" : "Expense is edited"}
+                return {
+                        "Status": "Success",
+                        "Data": "",
+                        "Message" : "Expense is deleted",
+                        "Errors": None
+                        }  
         except Exception as e:
                logging.error(str(e))
                raise HTTPException(status_code=500, detail=str(e))

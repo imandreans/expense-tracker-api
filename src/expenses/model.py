@@ -24,3 +24,4 @@ class CreateExpense(BaseModel):
     # 
     date: datetime.datetime = datetime.datetime.now()
 
+    

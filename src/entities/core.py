@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime, timezone
 from ..database.core import Base
 import enum
-
+import json
 class User(Base):
     __tablename__ = 'users'
 
@@ -54,3 +54,16 @@ class Expense(Base):
     user: Mapped[list["User"]] = relationship(back_populates="expenses")
     def __repr__(self):
         return f'<User(title={self.title}, price={self.price}, category={self.category}, created_at={self.created_at})>'
+    
+    def to_dict(self):
+        return {
+            'id': str(self.id),  # Convert UUID to string
+            'title': self.title,
+            'price': self.price,
+            'category': self.category.value if isinstance(self.category, enum.Enum) else self.category,
+            'created_at': self.created_at.isoformat(),  # Convert datetime to ISO format
+            'user_id': str(self.user_id)
+        }
+    
+    def to_json(self):
+        return json.dumps(self.to_dict())

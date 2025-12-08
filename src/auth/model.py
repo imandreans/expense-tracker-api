@@ -20,7 +20,7 @@ class Token(BaseModel):
     token_type: str
 
 class LoginUserRequest(BaseModel):
-    username: str = Field(min_length=1, frozen=True)
+    username: str = Field(min_length=1)
     password: str = Field(min_length=8)
 
 class TokenData(BaseModel):

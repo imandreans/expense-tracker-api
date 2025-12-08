@@ -9,7 +9,6 @@ from passlib.context import CryptContext
 import uuid
 from ..entities.core import User
 import jwt
-from jwt.exceptions import InvalidTokenError
 from typing import Annotated
 import logging
 
@@ -32,14 +31,18 @@ def verify_password(plain_password: str, hashed_password: str) -> str:
 
 # Error handling working
 def authenticate_user(username: str, password: str, db: Session) -> list:
+    # try:
     query = select(User).where(User.username == username)
     user = db.scalars(query).first()
     # user = db.table("Users").select("*").eq("username", username).execute()
-    if user or verify_password(password, user.password):
-        return user.id
-    logging.error("Username/Password is invalid")
-    raise HTTPException(status_code=400, detail="Username/Password is invalid!")
-
+    if user == None or not verify_password(password, user.password):
+        logging.error("Username/Password is invalid")
+        raise HTTPException(status_code=400, detail="Username/Password is invalid!")
+    return user.id
+    # except Exception as e:
+    #     logging.error(str(e))
+    #     raise HTTPException(status_code=500, detail=f"Internal Server Error: {e}")
+    
 def create_access_token(username: str, user_id: str, expires_delta: int = None) -> str:
     if expires_delta is not None:
         expires_delta = datetime.now(timezone.utc) + expires_delta
@@ -76,8 +79,7 @@ def get_current_user(token: HTTPAuthorizationCredentials = Depends(security)) ->
 
 
 def create_user(db: Session, request: RegisterUserRequest) -> Token | None:
-    try:
-
+    # try:
         query = select(User).where(User.username == request.username)
         user = db.scalars(query).first()
         logging.info(f"Getting {request.username}, if already exists")
@@ -86,7 +88,7 @@ def create_user(db: Session, request: RegisterUserRequest) -> Token | None:
         
         logging.info(f"Create new username. . .")
         new_user = User(
-            id=uuid.uuid4(),
+            id=str(uuid.uuid4()),
             username=request.username,
             password = hash_password(request.password),
             balance = request.balance,
@@ -97,10 +99,15 @@ def create_user(db: Session, request: RegisterUserRequest) -> Token | None:
         db.commit()
         
         token = create_access_token(new_user.username, new_user.id, timedelta(minutes=10))
-        return Token(create_access=token, type="bearer") 
-    except Exception as e:
-        logging.error(f"Failed to register user: {e}")
-        raise
+        return {
+        "Status": "Success",
+        "Data": Token(create_access=token, type="bearer"),
+        "Message" : "Registered Successfully",
+        "Errors": None
+    }  
+    # except Exception as e:
+    #     logging.error(f"Failed to register user: {e}")
+    #     raise HTTPException(status_code=409, detail=f"Internal Server Error: {e}")
         
         
 CurrentUser = Annotated[TokenData, Depends(get_current_user)]
@@ -113,5 +120,12 @@ def login(db: Session, request: Annotated[OAuth2PasswordRequestForm, Depends()])
     token = create_access_token(username, str(user), 
                             timedelta(minutes=10))
     logging.info("User logged in")
-    return Token(create_access=token, token_type="bearer")
+    return {
+        "Status": "Success",
+        "Data": Token(create_access=token, token_type="bearer"),
+        "Message" : "Logged in Successfully",
+        "Errors": None
+    }
+
+
 
