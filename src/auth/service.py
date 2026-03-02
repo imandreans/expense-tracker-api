@@ -98,10 +98,10 @@ def create_user(db: Session, request: RegisterUserRequest) -> Token | None:
         db.add(new_user)
         db.commit()
         
-        token = create_access_token(new_user.username, new_user.id, timedelta(minutes=10))
+        token = create_access_token(new_user.username, str(new_user.id), timedelta(minutes=10))
         return {
         "Status": "Success",
-        "Data": Token(create_access=token, type="bearer"),
+        "Data": Token(create_access=token, token_type="bearer"),
         "Message" : "Registered Successfully",
         "Errors": None
     }  
