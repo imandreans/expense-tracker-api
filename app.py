@@ -16,14 +16,15 @@ from wtforms import StringField, SubmitField, DateField, FloatField, PasswordFie
 from wtforms.validators import DataRequired
 from wtforms.widgets import NumberInput
 
+dotenv_path = join(dirname(__file__), '.env')
+load_dotenv(dotenv_path)
+
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY")
+app.secret_key = os.getenv("SECRET_KEY", "dev")
 
 csrf = CSRFProtect(app)
 bycrypt = Bcrypt(app)
-dotenv_path = join(dirname(__file__), '.env')
 
-load_dotenv(dotenv_path)
 def token_required(func):
     @wraps(func)
     def decorated(*args, **kwargs):
@@ -42,21 +43,17 @@ def token_required(func):
         except jwt.exceptions.ExpiredSignatureError as e:
             error = f'Token is Expired! - {e}'
             return render_template('400.html', error=error)
-        # except Exception as e:
-        #     # error = f'Unknown error has occured - {e}'
-        #     return e
+   
     return decorated
 
 def connect_to_db():
-    try:
-        with app.app_context():
-            url = os.getenv("SUPABASE_URL")
-            key = os.getenv("SUPABASE_KEY")
-            supabase: Client = create_client(url,key)
-        return supabase
-    except Exception as e:
-        error = f'Unknown error has occured - {e}'
-        return render_template('400.html', error=error)
+    url = os.getenv("SUPABASE_URL")
+    key = os.getenv("SUPABASE_KEY")
+    if not url or not key:
+        error = "SUPABASE_URL and SUPABASE_KEY must be set in the environment."
+        app.logger.error(error)
+        raise RuntimeError(error)
+    return create_client(url, key)
 
 class SignUpForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(message='Username is required as your identity')]) 
@@ -101,19 +98,19 @@ def home():
             match selected_filter:
                 case 'past-month':
                     past_month = current_date - timedelta(days=30)
-                    expenses = expenses.gte("date", past_month)
+                    expenses = expenses.gte("created_at", past_month)
                 case 'past-week':
                     past_week = current_date - timedelta(days=7)
-                    expenses = expenses.gte("date", past_week)
+                    expenses = expenses.gte("created_at", past_week)
                 case 'last-three-months':
                     last_three_months = current_date - timedelta(days=90)
-                    expenses = expenses.gte("date", last_three_months)
+                    expenses = expenses.gte("created_at", last_three_months)
 
         if len(start_date) > 0:
-            expenses = expenses.gte("date", start_date)
+            expenses = expenses.gte("created_at", start_date)
 
         if len(end_date) > 0:
-            expenses = expenses.lte("date", end_date)
+            expenses = expenses.lte("created_at", end_date)
 
         selected_date = start_date, end_date
         
@@ -283,5 +280,4 @@ def logout():
     response.set_cookie('auth_token', expires=0)
     return response
 if __name__ == '__main__':
-
     app.run()
